@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Move Letters</title>
+		<style>
+			/* author: Shounak
+https://codepen.io/dasshounak/pen/QWKKYdj */
+			body {
+				background: linear-gradient(45deg, #fc466b, #3f5efb);
+				height: 100vh;
+				font-family: 'Montserrat', sans-serif;
+				overflow: hidden;
+			}
+
+			form {
+				background: rgba(255, 255, 255, 0.3);
+				padding: 3em;
+				height: 320px;
+				border-radius: 20px;
+				border-left: 1px solid rgba(255, 255, 255, 0.3);
+				border-top: 1px solid rgba(255, 255, 255, 0.3);
+				backdrop-filter: blur(10px);
+				box-shadow: 20px 20px 40px -6px rgba(0, 0, 0, 0.2);
+				text-align: center;
+
+				transition: all 0.2s ease-in-out;
+			}
+
+			input {
+				background: transparent;
+				width: 200px;
+				padding: 1em;
+				margin-bottom: 2em;
+				border: none;
+				border-left: 1px solid rgba(255, 255, 255, 0.3);
+				border-top: 1px solid rgba(255, 255, 255, 0.3);
+				border-radius: 5000px;
+				backdrop-filter: blur(5px);
+				box-shadow: 4px 4px 60px rgba(0, 0, 0, 0.2);
+				color: #fff;
+				font-family: Montserrat, sans-serif;
+				font-weight: 500;
+				font-size: 20px;
+				transition: all 0.2s ease-in-out;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+			}
+			input:hover {
+				background: rgba(255, 255, 255, 0.1);
+				box-shadow: 4px 4px 60px 8px rgba(0, 0, 0, 0.2);
+			}
+			input[type='email']:focus,
+			input[type='password']:focus {
+				background: rgba(255, 255, 255, 0.1);
+				box-shadow: 4px 4px 60px 8px rgba(0, 0, 0, 0.2);
+			}
+			input[type='button'] {
+				margin-top: 10px;
+				width: 150px;
+				font-size: 1rem;
+			}
+			input[type='button']:hover {
+				cursor: pointer;
+			}
+			input[type='button']:active {
+				background: rgba(255, 255, 255, 0.2);
+			}
+
+			::placeholder {
+				font-family: Montserrat, sans-serif;
+				font-weight: 400;
+				color: #fff;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+			}
+
+			.drop {
+				background: rgba(255, 255, 255, 0.3);
+				backdrop-filter: blur(10px);
+				border-radius: 10px;
+				border-left: 1px solid rgba(255, 255, 255, 0.3);
+				border-top: 1px solid rgba(255, 255, 255, 0.3);
+				box-shadow: 10px 10px 60px -8px rgba(0, 0, 0, 0.2);
+				position: absolute;
+				transition: all 0.2s ease;
+			}
+			.drop-1 {
+				height: 80px;
+				width: 80px;
+				top: -20px;
+				left: -40px;
+				z-index: -1;
+			}
+			.drop-2 {
+				height: 80px;
+				width: 80px;
+				bottom: -30px;
+				right: -10px;
+			}
+			.drop-3 {
+				height: 100px;
+				width: 100px;
+				bottom: 120px;
+				right: -50px;
+				z-index: -1;
+			}
+			.drop-4 {
+				height: 120px;
+				width: 120px;
+				top: -60px;
+				right: -60px;
+			}
+			.drop-5 {
+				height: 60px;
+				width: 60px;
+				bottom: 170px;
+				left: 90px;
+				z-index: -1;
+			}
+
+			a,
+			input:focus,
+			select:focus,
+			textarea:focus,
+			button:focus {
+				outline: none;
+			}
+
+			#text-container {
+				max-width: 1200px;
+			}
+			#output-text {
+				user-select: none;
+				font-size: 50px;
+				margin: 40px;
+			}
+			.selected {
+				background-color: yellow;
+				cursor: move;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="text-container">
+			<input type="text" id="input-text" /><br />
+			<input onclick="displayText()" type="button" value="Go" /><br />
+			<div id="output-text"></div>
+
+			<div class="drops">
+				<div class="drop drop-1"></div>
+				<div class="drop drop-2"></div>
+				<div class="drop drop-3"></div>
+				<div class="drop drop-4"></div>
+				<div class="drop drop-5"></div>
+			</div>
+		</div>
+
+		<script>
+			let isDragging = false
+			let isCtrlPressed = false
+			let selectedLetters = []
+			let offsetX, offsetY
+
+			document.addEventListener('mousedown', handleMouseDown)
+			document.addEventListener('mousemove', handleMouseMove)
+			document.addEventListener('mouseup', handleMouseUp)
+			document.addEventListener('keydown', handleKeyDown)
+			document.addEventListener('keyup', handleKeyUp)
+
+			function displayText() {
+				const inputText = document.getElementById('input-text').value
+				const outputText = document.getElementById('output-text')
+				outputText.innerHTML = ''
+
+				let left = 0
+				for (const char of inputText) {
+					const span = document.createElement('span')
+					span.textContent = char
+					span.style.position = 'absolute'
+					span.style.left = left + 'px'
+					outputText.appendChild(span)
+					left += span.offsetWidth
+				}
+			}
+
+			function handleMouseDown(event) {
+				const clickedElement = event.target
+
+				if (event.target.tagName === 'SPAN') {
+					if (!isCtrlPressed) {
+						// Clear previous selection
+						selectedLetters.forEach(letter => {
+							letter.classList.remove('selected')
+						})
+						selectedLetters = []
+					}
+
+					if (!clickedElement.classList.contains('selected')) {
+						clickedElement.classList.add('selected')
+						selectedLetters.push(clickedElement)
+					} else {
+						clickedElement.classList.remove('selected')
+						const index = selectedLetters.indexOf(clickedElement)
+						if (index !== -1) {
+							selectedLetters.splice(index, 1)
+						}
+					}
+
+					offsetX = event.clientX - clickedElement.getBoundingClientRect().left
+					offsetY = event.clientY - clickedElement.getBoundingClientRect().top
+
+					isDragging = true
+					event.preventDefault() // Prevent text selection
+				}
+			}
+
+			function handleMouseMove(event) {
+				if (isDragging && selectedLetters.length > 0) {
+					const elements = document.querySelectorAll('.selected')
+					elements.forEach(element => {
+						element.style.left = event.clientX - offsetX + 'px'
+						element.style.top = event.clientY - offsetY + 'px'
+					})
+				}
+
+				event.preventDefault() // Prevent text selection
+			}
+
+			function handleMouseUp(event) {
+				if (isDragging && selectedLetters.length > 0) {
+					const hoveredElement = document.elementFromPoint(
+						event.clientX,
+						event.clientY
+					)
+					if (
+						hoveredElement.tagName === 'SPAN' &&
+						!hoveredElement.classList.contains('selected')
+					) {
+						const hoveredIndex = Array.from(
+							hoveredElement.parentNode.children
+						).indexOf(hoveredElement)
+						const referenceElement =
+							hoveredIndex <
+							selectedLetters[selectedLetters.length - 1].parentNode.children
+								.length -
+								1
+								? hoveredElement
+								: hoveredElement.nextSibling
+						selectedLetters.forEach(letter => {
+							letter.parentNode.removeChild(letter)
+							referenceElement.parentNode.insertBefore(letter, referenceElement)
+						})
+					} else {
+						const lastMovedElement = selectedLetters[selectedLetters.length - 1]
+						lastMovedElement.style.left = event.clientX - offsetX + 'px'
+						lastMovedElement.style.top = event.clientY - offsetY + 'px'
+					}
+				}
+
+				isDragging = false
+			}
+
+			function handleKeyDown(event) {
+				if (event.key === 'Control') {
+					isCtrlPressed = true
+					document.body.style.cursor = 'crosshair'
+				}
+			}
+
+			function handleKeyUp(event) {
+				if (event.key === 'Control') {
+					isCtrlPressed = false
+					document.body.style.cursor = 'auto'
+				}
+			}
+
+			document.addEventListener('keydown', event => {
+				if (event.key === 'Delete') {
+					selectedLetters.forEach(letter => {
+						letter.parentNode.removeChild(letter)
+					})
+					selectedLetters = []
+				}
+			})
+		</script>
+	</body>
+</html>
